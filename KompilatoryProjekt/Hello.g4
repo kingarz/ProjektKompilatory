@@ -1,30 +1,59 @@
 /**
  * Define a grammar called Hello
  */
-grammar hello;
-r  : Char ;         // match keyword hello followed by an identifier
-re  : Char BooleanOperator Char;
+ /**
+  * Parser Rules
+  */
+grammar Hello;
+/**
+ * Lexer Rules
+ */
+start : declarationList  | ifStatement | instructionsBlock;
 
-Start : Declaration | IfStatement | WhiteSpace | InstructionsBlock;
-Declaration : (VariableDec | ArrayDec) Semicolon;
-VariableDec : VarType VarName;
-ArrayDec : VarType VarName SquareOpenBracket SquareCloseBracket (SquareOpenBracket SquareCloseBracket)*;
-ArrayVal : VarName SquareOpenBracket Integer SquareCloseBracket ((SquareOpenBracket Integer SquareCloseBracket)*);
-VarType : IntegerType | FloatType | StringType | BooleanType;
-IfStatement : If OpenBracket LogicalStatement CloseBraket InstructionsBlock ((Elsif OpenBracket LogicalStatement CloseBraket InstructionsBlock)* Else InstructionsBlock)?;
-LogicalStatement: OpenBracket LogicalStatement CloseBraket ((LogicalOperator OpenBracket LogicalStatement CloseBraket)+ | (Value BooleanOperator Value) | Boolean);
-Value : (VarName | ArrayVal | Integer | Float | String) (MathOperator (VarName | ArrayVal | Integer | Float | String))*;
-Assignment : (VariableDec | ArrayDec | VarName) EqualMark Value Semicolon;
-InstructionsBlock : (Declaration | IfStatement | Assignment)*;
+declarationList : declaration | declarationList declaration;
+
+declaration : (variableDec | arrayDec) Semicolon;
+
+variableDec : varType VarName;
+
+arrayDec : varType VarName SquareOpenBracket SquareCloseBracket (SquareOpenBracket SquareCloseBracket)*;
+
+arrayVal : VarName SquareOpenBracket Integer SquareCloseBracket ((SquareOpenBracket Integer SquareCloseBracket)*);
+
+varType : IntegerType | FloatType | StringType | BooleanType;
+
+ifStatement : If OpenBracket logicalStatement CloseBracket Then
+            OpenBracket instructionsBlock CloseBracket
+            ((Elsif OpenBracket logicalStatement CloseBracket instructionsBlock)*
+             Else OpenBracket instructionsBlock CloseBracket)?;
+
+logicalStatement:  value BooleanOperator value | Boolean;
+
+
+value : (VarName | arrayVal | Integer | Float | String) (MathOperator (VarName | arrayVal | Integer | Float | String))*;
+
+assignment : (declaration | VarName) EqualMark value Semicolon;
+
+instructionsBlock : ( declaration | ifStatement | assignment)*;
+
+
 Integer : Digit+;
+
 Float : Integer Dot Integer;
-String : QuoteMark (Char | Digit)*;
-VarName : Char (Char | Digit)*;
-Comment: LineComment (Digit | Char | MathOperator | BooleanOperator | SpecialChars | WhiteSpace | Dot | OpenBracket | CloseBraket | SquareOpenBracket | SquareCloseBracket | LineComment)*;
-WhiteSpace : ' ';
+
+String : QuoteMark CharSequence QuoteMark;
+
+
+
+
+WhiteSpace : [ \t\r\n]+ -> skip ; // skip spaces, tabs, newlines
 SpecialChars : '!' | '@' | '#' | '$' | '%' | '^' | '&' | '_' | ',' | '/' |'?';
-Digit : [0-9];
-Char : [a-z] | [A-Z] ;             // match lower-case identifiers
+fragment Digit : [0-9];
+fragment Char : [a-z] ;             // match lower-case identifiers
+fragment CharSequence : Char+;
+
+
+
 MathOperator : '+' | '-' | '*' | '/';
 BooleanOperator : '<'|'<='|'>'|'>='|'=='|'!=';
 LogicalOperator : 'and' | 'or';
@@ -32,23 +61,42 @@ Boolean : 'true' 'false';
 If : 'if';
 Elsif: 'elsif';
 Else: 'else';
+Then: 'then';
 IntegerType: 'int';
 FloatType: 'float';
 StringType: 'string';
 BooleanType : 'boolean';
+VarName : Char (Char | Digit)*;
 EqualMark : '=' ;
 Dot : '.';
 QuoteMark : '"';
 Semicolon :';';
 OpenBracket : '(';
-CloseBraket : ')';
+CloseBracket : ')';
 SquareOpenBracket : '[';
 SquareCloseBracket : ']';
-LineComment : '//';
-NewLine : '\n';
 
 Text : (Char)* ;
+Whitespace
+    :   [ \t]+
+        -> skip
+    ;
 
+Newline
+    :   (   '\r' '\n'?
+        |   '\n'
+        )
+        -> skip
+    ;
 
-WS : [ \t\r\n]+ -> skip ; // skip spaces, tabs, newlines
+BlockComment
+    :   '/*' .*? '*/'
+        -> skip
+    ;
+
+LineComment
+    :   '//' ~[\r\n]*
+        -> skip
+    ;
+
 
